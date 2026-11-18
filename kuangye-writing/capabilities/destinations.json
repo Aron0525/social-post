@@ -1,0 +1,17 @@
+{
+  "bundle_id": "bundle.kuangye-writing",
+  "variant": "single",
+  "router_entry": "kuangye-writing",
+  "soft_budget": 8,
+  "promoted": [],
+  "served_by_router": [
+    "cap.kuangye.single-sentence",
+    "cap.kuangye.assert-first",
+    "cap.kuangye.mirror-pair",
+    "cap.kuangye.question-hook",
+    "cap.kuangye.numbered-list",
+    "cap.kuangye.concrete-anchor",
+    "cap.kuangye.closing",
+    "cap.kuangye.stance"
+  ]
+}

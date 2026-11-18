@@ -1,0 +1,19 @@
+# 本地运行时数据与会话记录，不入库
+.codebuddy/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 同步令牌（含密钥，任何情况下都不得提交）
+.sync_token
+**/.sync_token
+
+# 临时与日志
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

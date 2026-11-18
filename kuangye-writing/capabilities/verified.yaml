@@ -1,0 +1,70 @@
+# Capability Bundle（唯一编译事实源）
+schema_version: 1
+bundle_id: bundle.kuangye-writing
+source: 《旷野之心》2026 版 / Morris / X @Morris_LT
+capability_count: 8
+variant: single
+capabilities:
+  - capability_id: cap.kuangye.single-sentence
+    revision: 1
+    name: 单句成帖
+    one_liner: 把整帖压成一个可单独摘抄的判断句，不写第二句
+    card: cards/single-sentence.md
+    also_read: [assert-first, closing]
+    destination: served_by
+
+  - capability_id: cap.kuangye.assert-first
+    revision: 1
+    name: 断言领起加一层补证
+    one_liner: 首句下判断，只补一层细化或依据，不另起总结段
+    card: cards/assert-first.md
+    also_read: [concrete-anchor, question-hook]
+    destination: served_by
+
+  - capability_id: cap.kuangye.mirror-pair
+    revision: 1
+    name: 两句对举与对称
+    one_liner: 造两句字数相近、结构镜像的短句并置，不写连接词
+    card: cards/mirror-pair.md
+    also_read: [numbered-list, stance]
+    destination: served_by
+
+  - capability_id: cap.kuangye.question-hook
+    revision: 1
+    name: 设问自答钩子
+    one_liner: 问句压在首句且 ≤20 字，第二句立刻自答
+    card: cards/question-hook.md
+    also_read: [assert-first, concrete-anchor]
+    destination: served_by
+
+  - capability_id: cap.kuangye.numbered-list
+    revision: 1
+    name: 编号清单体
+    one_liner: 先报总数再逐项给 8 至 20 字短语，项内不展开
+    card: cards/numbered-list.md
+    also_read: [mirror-pair, concrete-anchor]
+    destination: served_by
+
+  - capability_id: cap.kuangye.concrete-anchor
+    revision: 1
+    name: 硬数字与最小案例
+    one_liner: 把抽象程度词换成可数对象与最小案例
+    card: cards/concrete-anchor.md
+    also_read: [assert-first, stance]
+    destination: served_by
+
+  - capability_id: cap.kuangye.closing
+    revision: 1
+    name: 收尾四型
+    one_liner: 末句用金句、回扣、动作或留白收住，删总结段
+    card: cards/closing.md
+    also_read: [single-sentence]
+    destination: served_by
+
+  - capability_id: cap.kuangye.stance
+    revision: 1
+    name: 语气与第二人称直指
+    one_liner: 删情态词，改第二人称，用全称判断立住语气
+    card: cards/stance.md
+    also_read: [assert-first, mirror-pair]
+    destination: served_by

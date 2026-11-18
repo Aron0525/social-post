@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>值得关注新闻 · 推特长文 8 条 · 2026-11-16 21时</title>
+<style>
+:root{
+  --bg:#0f1419; --card:#16202a; --card2:#1c2733; --border:#2f3e4e;
+  --text:#e7e9ea; --sub:#8b98a5; --accent:#1d9bf0; --btn:#1d9bf0; --btn-ok:#00ba7c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+.wrap{max-width:720px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;margin:8px 0 4px}
+.meta{color:var(--sub);font-size:13px;margin-bottom:20px}
+.toolbar{display:flex;gap:10px;margin-bottom:20px}
+button{background:var(--btn);color:#fff;border:none;border-radius:999px;padding:8px 16px;font-size:14px;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+.post{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 16px 12px;margin-bottom:18px}
+.post-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.tag{font-size:12px;color:var(--sub)}
+.copy{background:transparent;border:1px solid var(--btn);color:var(--btn);padding:5px 14px;font-size:13px}
+.copy.done{border-color:var(--btn-ok);color:var(--btn-ok)}
+textarea{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:15px;font-family:inherit;line-height:1.7;resize:vertical;min-height:180px}
+textarea:focus{outline:none;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>值得关注新闻 · 推特长文</h1>
+  <div class="meta">2026-11-16 21:00 场次 · 8 条 · 每条：先观点/疑问 → 主体观点，段间空行 · 事实按来源照录，发送前建议核对原文</div>
+  <div class="toolbar"><button id="copyAll">一键复制全部 8 条</button></div>
+  <div id="list"></div>
+</div>
+<script>
+const POSTS = [
+`模型的比分不再是看板上的分数，是账单。
+
+阿里今天发布 Qwen4-Max：总参数 2.4T，每个 token 只激活 71B，原生视觉，1M 上下文。官方口径单任务平均费用比上代降 58%，缓存命中每百万 tokens 低到 0.5 元，中小尺寸还会陆续开源。
+
+国内旗舰的竞争焦点已经换了，从堆分数改成堆性价比。
+
+看榜单的人该换个指标了，先问一句，跑完这个任务花多少钱。`,
+
+`给大模型建交易所，这件事比多发布一个模型重要。
+
+百度世界 2026 推出「词元所」：模型先验真、再评级，上线一个月日均调用超 5000 万次。同场发布的文心 5.5 Flash Preview，280B 总参数、激活 14B、1M 上下文。
+
+模型市场最缺的一直不是模型，是敢用的理由。
+
+谁解决信任问题，谁就收交易环节的过路费。`,
+
+`一周之内，国内三家都发布了同一个产品，便宜大碗。
+
+腾讯混元 Hy4 flash，224B 总参数、激活 12B，多模态加 1M 上下文，输入 0.5 元、输出 2 元每百万 tokens。前面是 Qwen4-Max 的六成降价，中间是文心 5.5 Flash。
+
+这不是巧合，是共识。
+
+日常任务根本用不着最大的模型，厂商现在把这句话写进了产品线。`,
+
+`撑着全球增长的钱，有相当一部分是借来的。
+
+IMF 总裁格奥尔基耶娃给出量化口径：AI 企业间循环融资超 1 万亿美元，约三分之二来自债务融资。她的判断是近期波动属有序调整，但最坏情景下美股 2026 年可能跌 20%。
+
+看 AI 行情，先看钱从哪来。
+
+发布会可以吹，债务融资的数字不会。`,
+
+`芯片的地缘规则正在换一套写法，从管制清单，改成拉群。
+
+美国已与日、澳、以、英、韩、印、卡塔尔、阿联酋签署「硅和平」协议，德荷瑞典和欧盟预计下周跟上。另据报道，英伟达、亚马逊、微软、OpenAI、Anthropic 将被列入 AI「国家冠军」名单，享受出口快速审批（名单细节待官方确认）。
+
+管和帮，开始用同一份名单。
+
+做硬件出海的人要盯紧了，你买的那颗芯片，背后是一整套联盟协议。`,
+
+`AI 算力最大供应商的帅位，换人了。
+
+11 月 12 日黄仁勋辞任英伟达 CEO，SEC 文件已经落地，CFO Colette Kress 临时接任，公司定于 11 月 17 日发布 Q3 财报。辞职诱因的传闻版本很多，我只记文件里写的事实。
+
+市场关心的从来不是故事，是路线图会不会变。
+
+明天的财报，就是第一个检验节点。`,
+
+`AI 实验室第一次要按季度向公众交底了。
+
+Anthropic 的 IPO 定价区间 70 到 78 美元，预计 11 月 19 日纳斯达克上市，代码 ANT。招股文件披露今年前九个月收入 332.4 亿美元，媒体口径认购约 6 倍（认购数字据报道，未经公司确认）。
+
+之前各家讲故事，上市之后只能报数。
+
+从下周起，AI 的估值有了可证伪的锚。`,
+
+`AI 替你花钱这件事，今天接上了真实的支付通道。
+
+OpenAI 上线 ChatGPT Wallet：代理可以代购，每笔交易要你本人 Face ID 确认，支付网络用令牌替代卡号，代理和商家都拿不到真实卡号，首发接入 Amex、万事达、Visa。
+
+代理商务的瓶颈从来不是模型，是付款这一步。
+
+支付通道通了，接下来该轮到商家抢着让代理进门了。`
+];
+
+const TITLES = ["Qwen4-Max 发布","百度词元所","腾讯混元 Hy4 flash","IMF 警告 AI 循环融资","美国「硅和平」协议","英伟达换帅","Anthropic IPO","OpenAI ChatGPT Wallet"];
+
+const list = document.getElementById('list');
+POSTS.forEach((text,i)=>{
+  const div = document.createElement('div');
+  div.className = 'post';
+  div.innerHTML = `<div class="post-head"><span class="tag">${i+1} / 8 · ${TITLES[i]}</span><button class="copy">复制全文</button></div>`;
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.rows = Math.min(14, text.split('\n\n').length + 2);
+  div.appendChild(ta);
+  const btn = div.querySelector('.copy');
+  btn.onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(text);}catch(e){ ta.select(); document.execCommand('copy'); }
+    btn.textContent = '已复制 ✓'; btn.classList.add('done');
+    setTimeout(()=>{ btn.textContent='复制全文'; btn.classList.remove('done'); }, 1600);
+  };
+  list.appendChild(div);
+});
+
+document.getElementById('copyAll').onclick = async (e)=>{
+  const all = POSTS.map((t,i)=>`${i+1}/8\n\n${t}`).join('\n\n———\n\n');
+  try{ await navigator.clipboard.writeText(all);}catch(err){}
+  const b = e.target; const old = b.textContent;
+  b.textContent = '已复制全部 8 条 ✓';
+  setTimeout(()=>{ b.textContent = old; }, 1600);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIHOT 今日 AI 热点 · 推特长文 2026-11-16</title>
+<style>
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6f8;margin:0;padding:24px 16px;color:#1c1e21}
+  .head{max-width:720px;margin:0 auto 20px}
+  .head h1{font-size:20px;margin:0 0 6px}
+  .head p{font-size:13px;color:#65676b;margin:0;line-height:1.6}
+  .bar{max-width:720px;margin:0 auto 16px;display:flex;justify-content:flex-end}
+  button{border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;background:#1d9bf0;color:#fff}
+  button.ghost{background:#e7f3fd;color:#1d9bf0}
+  .card{max-width:720px;margin:0 auto 18px;background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:8px}
+  .meta b{font-size:15px}
+  .meta span{font-size:12px;color:#65676b;white-space:nowrap}
+  pre{white-space:pre-wrap;word-break:break-word;font:14px/1.8 inherit;background:#f7f8fa;border:1px solid #e4e6eb;border-radius:8px;padding:14px;margin:0}
+  .row{margin-top:8px;display:flex;align-items:center;gap:10px}
+  .ok{font-size:12px;color:#00a400;display:none}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>AIHOT 今日 AI 热点 · 推特长文</h1>
+  <p>数据来源：AIHOT（aihot.news）过去 24 小时精选，共 8 条 ｜ 生成时间 2026-11-16 ｜ 事实与数字按 AIHOT 摘要照录，发送前建议点原文核对</p>
+</div>
+<div class="bar"><button class="ghost" onclick="copyAll()">复制全部</button></div>
+<div id="list"></div>
+<script>
+const posts=[
+{t:"IMF 警告 AI 循环融资超 1 万亿美元",s:"IT之家 · 观点",x:`全球经济这轮增长，是 AI 在下面撑着的，而撑着的钱，有不少是借来的。
+
+IMF 总裁格奥尔基耶娃在东盟峰会期间给出警告：AI 企业之间的循环融资规模已超 1 万亿美元，其中约三分之二来自债务融资。她的判断是，近期市场波动属于有序调整，不太可能演变成系统性风险。
+
+但最坏情景写得很具体：美股 2026 年可能下跌 20%，2028 年全球经济产出比基准预测低 1.1%。
+
+看 AI 行情，别只看模型发了多少，先看钱从哪来。循环融资的规模，比任何发布会都值得盯。`},
+{t:"自媒体作者分享 10 条指挥 Agent 最常用的 Prompt",s:"数字生命卡兹克 · 教程",x:`指挥 Agent 干活超过两个月的人，Prompt 会越来越短，也越来越像流程。
+
+数字生命卡兹克让 Agent 整理出自己近两个月最常用的 10 条 Prompt：从第一性原理找根因、先对齐喜好再出 3 版方案、推演改动的二阶三阶影响、假设最优方案错了去找反例、复盘 Bug 后沉淀成规则或 Skill。
+
+这十条的共同点很清楚：不是让 AI 更聪明，是把你要负的责任提前写清楚。
+
+用得越久，越像在给一个新员工写交接文档。`},
+{t:"腾讯混元发布 Hy4 flash：224B 总参数、1M 上下文",s:"腾讯混元 · 模型",x:`同样的活儿，你愿意多付几倍的钱，换什么？
+
+腾讯混元发布 Hy4 flash：总参数 224B（含 64B Engram 参数）、激活 12B，支持多模态和 1M 上下文，API 定价输入 0.5 元、输出 2 元每百万 tokens，大幅低于上一代 Hy4。
+
+224B 的身位配 12B 的激活，说明一件事：厂商已经把「日常任务」单独拎出来定价。便宜不是弱，是明确告诉你这台机器为哪类活儿造的。
+
+你每天九成的请求，其实用不着最大的那个模型。`},
+{t:"Qwen4-Max 登顶 Agent Arena 中国模型榜首",s:"Arena · 模型",x:`Qwen4-Max 在 Agent Arena 总榜排到第 14，Alibaba 成了排名第一的中国实验室。
+
+Arena 榜单显示，Qwen4-Max 以 +7.5% 的净提升成为排名最高的中国模型，Alibaba 排在总榜第 5，仅次于 Anthropic、Google、OpenAI 和 Meta。
+
+关键是这个榜怎么来的：基于 14.7k 条真实 Agent 会话给出排名和信号拆解，不是厂商自报家门。
+
+看榜单别只看名次，先看分是谁打的。真实使用量的权重上来之后，营销数字会越来越不值钱。`},
+{t:"Qwen4 Max 发布：Intelligence Index 43，成本约为上代三分之一",s:"通义千问 / Qwen · 模型",x:`Qwen4 Max 这组发布数字里，最值得看的不是分数，是账单。
+
+Artificial Analysis 的数据显示：Qwen4 Max 的 Intelligence Index 得分 43，比 Qwen3.8 Max（xhigh）高 9 分，落后 Kimi K3.1 Pro 3 分；每任务成本 3.27 美元，约为上代的三分之一，输出 token 用量减少 39%。
+
+配合 1M 上下文和每百万 tokens 输入 1.5 美元、输出 4.5 美元的定价，这个发布表达的立场很明确：追赶者不再堆分数，改堆性价比。
+
+模型发布比稿，下一轮比的是账单。`},
+{t:"Qwen4-Max 架构：2.4T 骨干、每 token 激活 71B",s:"Qwen · 模型",x:`2.4T 骨干参数，每个 token 只激活 71B。
+
+Qwen 团队公布 Qwen4-Max 架构细节：基于新 Qwen4 架构，2.4T 骨干参数、每 token 激活 71B、328B N-gram Embedding 参数，带原生视觉能力，上下文窗口 100 万 token。
+
+参数总量继续膨胀，激活量被死死按住。行业共识已经写进架构：能力靠总参数撑，账单靠激活量省。
+
+大而省不再是口号，是架构本身。`},
+{t:"Apple 联合 OpenEvidence 启动健康 AI 使用研究",s:"Apple · 论文",x:`苹果在研究你怎么用健康 AI，这件事本身，就是一次产品卡位。
+
+Apple 在美国启动 Apple Health AI Usage Study，联合 OpenEvidence，研究用户如何与对话式健康 AI 工具互动，官方同时披露了研究规模、参与条件与隐私安排。
+
+健康 AI 的门槛不在模型分数，在信任和真实使用数据。谁先拿到真实使用方式，谁就先定义使用边界。
+
+别家在卷模型，苹果在卷使用方式。`},
+{t:"1.4M 纯 HTML 3D 游戏走红，卡兹克拆解程序化生成原理",s:"数字生命卡兹克 · 教程",x:`1.4M 的文件，怎么装下一个 3D 游戏？
+
+卡兹克拆解了最近疯传的 1.4M 纯 HTML 3D 游戏：其中约 700KB 是打包进文件的 Three.js，剩下的全部由代码程序化生成，没有图片、没有模型、没有录音。
+
+这验证了一个方向：资产可以被代码替代。作品的体积上限，正在从美术产能变成提示词能力。
+
+下次内卷的素材，不再是贴图，是 Prompt。`}
+];
+const list=document.getElementById('list');
+posts.forEach((p,i)=>{
+  const card=document.createElement('div');card.className='card';
+  const meta=document.createElement('div');meta.className='meta';
+  const b=document.createElement('b');b.textContent=(i+1)+'. '+p.t;
+  const sp=document.createElement('span');sp.textContent=p.s;
+  meta.appendChild(b);meta.appendChild(sp);
+  const pre=document.createElement('pre');pre.id='p'+i;pre.textContent=p.x;
+  const row=document.createElement('div');row.className='row';
+  const btn=document.createElement('button');btn.textContent='复制全文';btn.onclick=()=>copyId(i);
+  const ok=document.createElement('span');ok.className='ok';ok.id='ok'+i;ok.textContent='已复制';
+  row.appendChild(btn);row.appendChild(ok);
+  card.appendChild(meta);card.appendChild(pre);card.appendChild(row);
+  list.appendChild(card);
+});
+async function copyId(i){
+  try{await navigator.clipboard.writeText(posts[i].x);show(i);}
+  catch(e){fallback(i);show(i);}
+}
+function fallback(i){
+  const r=document.createRange();r.selectNodeContents(document.getElementById('p'+i));
+  const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+  document.execCommand('copy');s.removeAllRanges();
+}
+function show(i){const el=document.getElementById('ok'+i);el.style.display='inline';setTimeout(()=>el.style.display='none',1500);}
+function copyAll(){
+  const t=posts.map((p,i)=>'【'+(i+1)+'】'+p.x).join('\n\n———————\n\n');
+  navigator.clipboard.writeText(t).catch(()=>{});
+  const b=document.querySelector('.bar button');b.textContent='全部已复制';
+  setTimeout(()=>b.textContent='复制全部',1500);
+}
+</script>
+</body>
+</html>
