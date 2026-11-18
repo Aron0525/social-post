@@ -85,6 +85,10 @@
 
 未传说明时，脚本按当前时间自动生成。
 
+远程仓库：https://github.com/Aron0525/social-post
+
+服务端 `/append` 写成功后会自动在后台跑一次 `sync.sh`，所以定时任务产出的每一批推文都会自动形成一次提交并推送，无需人工干预。同步日志在 `news-digest/.git-sync.log`，已被忽略，不入库。
+
 ## 线上页面
 
 两栏页面通过 `posts.jsonl?sharecode=...&v=时间戳` 拉取数据，`v` 参数用于绕过缓存。
