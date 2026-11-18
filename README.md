@@ -89,6 +89,8 @@
 
 服务端 `/append` 写成功后会自动在后台跑一次 `sync.sh`，所以定时任务产出的每一批推文都会自动形成一次提交并推送，无需人工干预。同步日志在 `news-digest/.git-sync.log`，已被忽略，不入库。
 
+`github.com` 的解析在本环境常被指向不可达地址，`sync.sh` 推送失败时会自动调用 `fix_hosts.sh` 探测可用 IP 并写回 hosts，然后重试一次。手动执行顺序同样是先 `./fix_hosts.sh` 再 `./sync.sh`。
+
 ## 线上页面
 
 两栏页面通过 `posts.jsonl?sharecode=...&v=时间戳` 拉取数据，`v` 参数用于绕过缓存。
