@@ -12,7 +12,7 @@ PAGE_FILE = "/workspace/news-digest/记录.html"
 TOKEN_FILE = "/workspace/news-digest/.sync_token"
 
 ALLOWED_ST = {"new", "overlap", "same"}
-ALLOWED_SRC = {"v1", "v2"}
+ALLOWED_SRC = {"v1", "v2", "v3"}
 REQUIRED = ("round", "title", "st", "note", "text")
 
 
@@ -158,6 +158,9 @@ def append():
 
         hit = None
         for old in existing:
+            # 三个栏目各自独立：只在同一 src 内判重
+            if str(old.get("src", "v1")) != src:
+                continue
             if similar(row["title"], old.get("title", "")):
                 hit = old
                 break

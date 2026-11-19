@@ -14,8 +14,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"
 .wrap{max-width:760px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:22px;margin:8px 0 4px}
 .meta{color:var(--sub);font-size:13px;margin-bottom:16px}
-.tabs{display:flex;gap:8px;margin-bottom:14px}
-.tabs button{flex:1;background:var(--card);border:1px solid var(--border);color:var(--sub);padding:10px 12px;border-radius:12px;text-align:left;cursor:pointer;transition:.15s}
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{flex:1 1 30%;min-width:104px;background:var(--card);border:1px solid var(--border);color:var(--sub);padding:10px 12px;border-radius:12px;text-align:left;cursor:pointer;transition:.15s}
 .tabs button b{display:block;font-size:15px;color:var(--text);font-weight:600}
 .tabs button span{display:block;font-size:11px;color:var(--sub);margin-top:2px}
 .tabs button.on{border-color:var(--accent);background:rgba(29,155,240,.1)}
@@ -43,11 +43,12 @@ textarea:focus{outline:none;border-color:var(--accent)}
 <body>
 <div class="wrap">
   <h1>推文记录</h1>
-  <div class="meta">两个栏目各自独立 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
+  <div class="meta">三个栏目各自独立 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
 
   <div class="tabs">
-    <button data-t="v1" class="on"><b>新闻速览</b><span>原逻辑 · 事实型，80 到 350 字</span></button>
-    <button data-t="v2"><b>热点解构</b><span>新结构 · 钩子型，30 到 250 字</span></button>
+    <button data-t="v1" class="on"><b>新闻速览</b><span>挖细节 · 80 到 350 字</span></button>
+    <button data-t="v2"><b>热点解构</b><span>追当天 · 30 到 250 字</span></button>
+    <button data-t="v3"><b>博眼球</b><span>话术结构 · 30 到 150 字</span></button>
   </div>
 
   <div class="filters">
@@ -80,13 +81,17 @@ async function load(){
   }
 }
 
-function srcOf(p){ return p.src === 'v2' ? 'v2' : 'v1'; }
+function srcOf(p){ return ['v1','v2','v3'].indexOf(p.src) >= 0 ? p.src : 'v1'; }
+
+const TAB_NAME = {v1:'新闻速览', v2:'热点解构', v3:'博眼球'};
 
 function updateTabCounts(){
   const n1 = POSTS.filter(p => srcOf(p) === 'v1').length;
   const n2 = POSTS.filter(p => srcOf(p) === 'v2').length;
-  document.querySelector('.tabs button[data-t="v1"] span').textContent = '原逻辑 · 事实型，共 ' + n1 + ' 条';
-  document.querySelector('.tabs button[data-t="v2"] span').textContent = '新结构 · 钩子型，共 ' + n2 + ' 条';
+  const n3 = POSTS.filter(p => srcOf(p) === 'v3').length;
+  document.querySelector('.tabs button[data-t="v1"] span').textContent = '挖细节 · 共 ' + n1 + ' 条';
+  document.querySelector('.tabs button[data-t="v2"] span').textContent = '追当天 · 共 ' + n2 + ' 条';
+  document.querySelector('.tabs button[data-t="v3"] span').textContent = '话术结构 · 共 ' + n3 + ' 条';
 }
 
 function render(){
@@ -96,9 +101,7 @@ function render(){
   if(curStatus === 'overlap') arr = arr.filter(p => p.st !== 'new');
   arr = arr.slice().reverse();
 
-  countEl.textContent = curTab === 'v2'
-    ? '热点解构 · ' + arr.length + ' 条'
-    : '新闻速览 · ' + arr.length + ' 条';
+  countEl.textContent = (TAB_NAME[curTab] || '新闻速览') + ' · ' + arr.length + ' 条';
 
   if(!arr.length){
     list.innerHTML = '<div class="empty">这一栏还没有内容</div>';
