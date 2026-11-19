@@ -2,8 +2,12 @@ import json
 import os
 import re
 import subprocess
+import sys
 import threading
 from flask import Flask, request, jsonify, Response
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hotwatch  # noqa: E402
 
 app = Flask(__name__)
 
@@ -123,6 +127,27 @@ def list_all():
             "text": r.get("text", "")[:160],
         })
     return jsonify(total=len(out), items=out)
+
+
+@app.route("/hot")
+def hot():
+    """热点监测：五源抓取 + 跨榜聚类 + 题材过滤。
+    ?limit=30  返回条数
+    ?topic=tech  只看科技财经产业
+    ?politics=1  保留已标记的时政条目（仅供人工核查，正常不使用）
+    """
+    limit = request.args.get("limit", "30")
+    try:
+        limit = max(1, min(80, int(limit)))
+    except ValueError:
+        limit = 30
+    topic = request.args.get("topic") or None
+    keep = request.args.get("politics") == "1"
+    try:
+        data = hotwatch.fetch_hot(limit=limit, keep_politics=keep, topic=topic)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)[:200]), 500
+    return jsonify(ok=True, **data)
 
 
 @app.route("/append", methods=["POST"])
