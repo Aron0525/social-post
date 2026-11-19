@@ -14,6 +14,7 @@ app = Flask(__name__)
 DATA_FILE = "/workspace/news-digest/posts.jsonl"
 PAGE_FILE = "/workspace/news-digest/记录.html"
 TOKEN_FILE = "/workspace/news-digest/.sync_token"
+CORPUS_FILE = "/workspace/news-digest/corpus/corpus.json"
 
 ALLOWED_ST = {"new", "overlap", "same"}
 ALLOWED_SRC = {"v1", "v2", "v3"}
@@ -127,6 +128,20 @@ def list_all():
             "text": r.get("text", "")[:160],
         })
     return jsonify(total=len(out), items=out)
+
+
+@app.route("/corpus")
+def corpus():
+    """给定时任务做照抄用的原帖清单。
+
+    每条含原帖全文、段落数、每段句数、抄的什么手法，以及一条同格式的新稿示范。
+    任务按 orig_text 的段落结构复制，只换内容。
+    """
+    try:
+        with open(CORPUS_FILE, "rb") as f:
+            return Response(f.read(), mimetype="application/json")
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
 
 
 @app.route("/hot")
