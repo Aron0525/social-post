@@ -43,10 +43,11 @@ textarea:focus{outline:none;border-color:var(--accent)}
 <body>
 <div class="wrap">
   <h1>推文记录</h1>
-  <div class="meta">三个栏目各自独立 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
+  <div class="meta">四个栏目各自独立 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
 
   <div class="tabs">
     <button data-t="v1" class="on"><b>新闻速览</b><span>挖细节 · 80 到 350 字</span></button>
+    <button data-t="v4"><b>讲解人</b><span>讲透逻辑 · 150 到 500 字</span></button>
     <button data-t="v2"><b>热点解构</b><span>追当天 · 30 到 250 字</span></button>
     <button data-t="v3"><b>博眼球</b><span>话术结构 · 30 到 150 字</span></button>
   </div>
@@ -81,17 +82,17 @@ async function load(){
   }
 }
 
-function srcOf(p){ return ['v1','v2','v3'].indexOf(p.src) >= 0 ? p.src : 'v1'; }
+function srcOf(p){ return ['v1','v2','v3','v4'].indexOf(p.src) >= 0 ? p.src : 'v1'; }
 
-const TAB_NAME = {v1:'新闻速览', v2:'热点解构', v3:'博眼球'};
+const TAB_NAME = {v1:'新闻速览', v4:'讲解人', v2:'热点解构', v3:'博眼球'};
 
 function updateTabCounts(){
-  const n1 = POSTS.filter(p => srcOf(p) === 'v1').length;
-  const n2 = POSTS.filter(p => srcOf(p) === 'v2').length;
-  const n3 = POSTS.filter(p => srcOf(p) === 'v3').length;
-  document.querySelector('.tabs button[data-t="v1"] span').textContent = '挖细节 · 共 ' + n1 + ' 条';
-  document.querySelector('.tabs button[data-t="v2"] span').textContent = '追当天 · 共 ' + n2 + ' 条';
-  document.querySelector('.tabs button[data-t="v3"] span').textContent = '话术结构 · 共 ' + n3 + ' 条';
+  const LABEL = {v1:'挖细节', v4:'讲透逻辑', v2:'追当天', v3:'话术结构'};
+  ['v1','v4','v2','v3'].forEach(t=>{
+    const n = POSTS.filter(p => srcOf(p) === t).length;
+    const el = document.querySelector('.tabs button[data-t="' + t + '"] span');
+    if(el) el.textContent = LABEL[t] + ' · 共 ' + n + ' 条';
+  });
 }
 
 function render(){

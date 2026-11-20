@@ -17,7 +17,7 @@ TOKEN_FILE = "/workspace/news-digest/.sync_token"
 CORPUS_FILE = "/workspace/news-digest/corpus/corpus.json"
 
 ALLOWED_ST = {"new", "overlap", "same"}
-ALLOWED_SRC = {"v1", "v2", "v3"}
+ALLOWED_SRC = {"v1", "v2", "v3", "v4"}
 REQUIRED = ("round", "title", "st", "note", "text")
 
 
