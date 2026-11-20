@@ -38,16 +38,24 @@ h1{font-size:22px;margin:8px 0 4px}
 textarea{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:15px;font-family:inherit;line-height:1.7;resize:vertical}
 textarea:focus{outline:none;border-color:var(--accent)}
 .empty{color:var(--sub);font-size:14px;padding:28px 4px;text-align:center}
+
+/* 讲解人：并入速览栏，作为同一条新闻的附属块 */
+.explain{margin:12px 0 2px;padding:12px 0 2px 12px;border-left:2px solid rgba(29,155,240,.45)}
+.explain .ex-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.explain .ex-tag{font-size:12px;color:var(--accent);letter-spacing:.5px}
+.explain .ex-note{font-size:12px;color:var(--sub);margin-bottom:8px}
+.explain textarea{background:rgba(29,155,240,.05);font-size:14.5px}
+.explain .copy{font-size:12px;padding:4px 12px}
+.orphan{margin-top:10px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>推文记录</h1>
-  <div class="meta">四个栏目各自独立 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
+  <div class="meta">三栏各自独立 · 讲解人在速览栏内随文展示 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
 
   <div class="tabs">
-    <button data-t="v1" class="on"><b>新闻速览</b><span>挖细节 · 80 到 350 字</span></button>
-    <button data-t="v4"><b>讲解人</b><span>讲透逻辑 · 150 到 500 字</span></button>
+    <button data-t="v1" class="on"><b>新闻速览</b><span>挖细节 · 80 到 900 字</span></button>
     <button data-t="v2"><b>热点解构</b><span>追当天 · 30 到 250 字</span></button>
     <button data-t="v3"><b>博眼球</b><span>话术结构 · 30 到 150 字</span></button>
   </div>
@@ -84,19 +92,131 @@ async function load(){
 
 function srcOf(p){ return ['v1','v2','v3','v4'].indexOf(p.src) >= 0 ? p.src : 'v1'; }
 
-const TAB_NAME = {v1:'新闻速览', v4:'讲解人', v2:'热点解构', v3:'博眼球'};
+const TAB_NAME = {v1:'新闻速览', v2:'热点解构', v3:'博眼球'};
+const LABEL = {v1:'挖细节', v2:'追当天', v3:'话术结构'};
 
 function updateTabCounts(){
-  const LABEL = {v1:'挖细节', v4:'讲透逻辑', v2:'追当天', v3:'话术结构'};
-  ['v1','v4','v2','v3'].forEach(t=>{
+  ['v1','v2','v3'].forEach(t=>{
     const n = POSTS.filter(p => srcOf(p) === t).length;
     const el = document.querySelector('.tabs button[data-t="' + t + '"] span');
     if(el) el.textContent = LABEL[t] + ' · 共 ' + n + ' 条';
   });
 }
 
+/* 归一化标题，用于 link 匹配 */
+function normTitle(s){
+  return String(s||'').replace(/[\s　，。、：；！？（）()\[\]【】“”‘’"'0-9a-zA-Z]/g,'');
+}
+
+/* 把讲解人（v4）挂到它所讲解的 v1 条目下 */
+function normRound(s){ return String(s||'').replace(/场$/,'').trim(); }
+
+function buildExplainMap(){
+  const v1s = POSTS.filter(p => srcOf(p) === 'v1');
+  const v4s = POSTS.filter(p => srcOf(p) === 'v4');
+  const map = new Map();   // v1 post -> v4 讲解人
+  const usedV1 = new Set();
+  const usedV4 = new Set();
+
+  // 1) 优先用 link 精确匹配标题
+  v4s.forEach(e=>{
+    const key = normTitle(e.link);
+    if(!key) return;
+    const hit = v1s.find(p=>!usedV1.has(p) && normTitle(p.title) === key);
+    if(hit){ map.set(hit, e); usedV1.add(hit); usedV4.add(e); }
+  });
+
+  // 2) link 退化为前缀包含匹配
+  v4s.forEach(e=>{
+    if(usedV4.has(e)) return;
+    const key = normTitle(e.link);
+    if(!key) return;
+    const hit = v1s.find(p=>!usedV1.has(p) && (normTitle(p.title).includes(key) || key.includes(normTitle(p.title))));
+    if(hit){ map.set(hit, e); usedV1.add(hit); usedV4.add(e); }
+  });
+
+  // 3) 兜底：同场次唯一匹配
+  const orphans = [];
+  v4s.forEach(e=>{
+    if(usedV4.has(e)) return;
+    const cand = v1s.filter(p=>!usedV1.has(p) && normRound(p.round) === normRound(e.round));
+    if(cand.length === 1){ map.set(cand[0], e); usedV1.add(cand[0]); usedV4.add(e); }
+    else orphans.push(e);
+  });
+  return {map, orphans};
+}
+
+function makeCopyBtn(btn, ta){
+  btn.onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(ta.value); }catch(e){ ta.select(); document.execCommand('copy'); }
+    const old = btn.textContent;
+    btn.textContent = '已复制 ✓'; btn.classList.add('done');
+    setTimeout(()=>{ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+  };
+}
+
+function renderPost(p){
+  const div = document.createElement('div');
+  div.className = 'post';
+  const [cls,label] = BADGE[p.st] || BADGE.same;
+  div.innerHTML = '<div class="head"><div class="left"><span class="round"></span><span class="badge ' + cls + '">' + label + '</span></div><button class="copy">复制全文</button></div><div class="note"></div>';
+  div.querySelector('.round').textContent = p.round + ' · ' + p.title;
+  div.querySelector('.note').textContent = p.note || '';
+  const ta = document.createElement('textarea');
+  ta.value = p.text;
+  ta.rows = Math.min(18, p.text.split('\n\n').length + 2);
+  div.appendChild(ta);
+  makeCopyBtn(div.querySelector('.copy'), ta);
+  return div;
+}
+
+function renderExplain(p){
+  const box = document.createElement('div');
+  box.className = 'explain';
+  box.innerHTML = '<div class="ex-head"><span class="ex-tag">讲解人</span><button class="copy">复制讲解</button></div><div class="ex-note"></div>';
+  box.querySelector('.ex-note').textContent = p.note || '';
+  const ta = document.createElement('textarea');
+  ta.value = p.text;
+  ta.rows = Math.min(18, p.text.split('\n\n').length + 2);
+  box.appendChild(ta);
+  makeCopyBtn(box.querySelector('.copy'), ta);
+  return box;
+}
+
 function render(){
   list.innerHTML = '';
+
+  if(curTab === 'v1'){
+    const {map, orphans} = buildExplainMap();
+    let arr = POSTS.filter(p => srcOf(p) === 'v1');
+    if(curStatus === 'new') arr = arr.filter(p => p.st === 'new');
+    if(curStatus === 'overlap') arr = arr.filter(p => p.st !== 'new');
+    arr = arr.slice().reverse();
+
+    const nExp = POSTS.filter(p => srcOf(p) === 'v4').length;
+    countEl.textContent = '新闻速览 · ' + arr.length + ' 条速览 · ' + nExp + ' 条讲解人';
+
+    if(!arr.length && !orphans.length){
+      list.innerHTML = '<div class="empty">这一栏还没有内容</div>';
+      return;
+    }
+
+    arr.forEach(p=>{
+      const div = renderPost(p);
+      const e = map.get(p);
+      if(e) div.appendChild(renderExplain(e));
+      list.appendChild(div);
+    });
+
+    orphans.forEach(e=>{
+      const div = renderPost(e);
+      div.classList.add('orphan');
+      div.querySelector('.badge').textContent = '讲解人 · 未挂到速览条目';
+      list.appendChild(div);
+    });
+    return;
+  }
+
   let arr = POSTS.filter(p => srcOf(p) === curTab);
   if(curStatus === 'new') arr = arr.filter(p => p.st === 'new');
   if(curStatus === 'overlap') arr = arr.filter(p => p.st !== 'new');
@@ -108,26 +228,7 @@ function render(){
     list.innerHTML = '<div class="empty">这一栏还没有内容</div>';
     return;
   }
-
-  arr.forEach((p)=>{
-    const div = document.createElement('div');
-    div.className = 'post';
-    const [cls,label] = BADGE[p.st] || BADGE.same;
-    div.innerHTML = '<div class="head"><div class="left"><span class="round"></span><span class="badge ' + cls + '">' + label + '</span></div><button class="copy">复制全文</button></div><div class="note"></div>';
-    div.querySelector('.round').textContent = p.round + ' · ' + p.title;
-    div.querySelector('.note').textContent = p.note || '';
-    const ta = document.createElement('textarea');
-    ta.value = p.text;
-    ta.rows = Math.min(18, p.text.split('\n\n').length + 2);
-    div.appendChild(ta);
-    const btn = div.querySelector('.copy');
-    btn.onclick = async ()=>{
-      try{ await navigator.clipboard.writeText(p.text); }catch(e){ ta.select(); document.execCommand('copy'); }
-      btn.textContent = '已复制 ✓'; btn.classList.add('done');
-      setTimeout(()=>{ btn.textContent='复制全文'; btn.classList.remove('done'); }, 1600);
-    };
-    list.appendChild(div);
-  });
+  arr.forEach(p=> list.appendChild(renderPost(p)));
 }
 
 document.querySelectorAll('.tabs button').forEach(b=>{

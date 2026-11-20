@@ -19,6 +19,7 @@ CORPUS_FILE = "/workspace/news-digest/corpus/corpus.json"
 ALLOWED_ST = {"new", "overlap", "same"}
 ALLOWED_SRC = {"v1", "v2", "v3", "v4"}
 REQUIRED = ("round", "title", "st", "note", "text")
+OPTIONAL = ("link",)  # v4 讲解人关联的 v1 标题，用于在速览栏内联展示
 
 
 def read_token():
@@ -124,6 +125,7 @@ def list_all():
             "title": r.get("title", ""),
             "st": r.get("st", ""),
             "src": r.get("src", "v1"),
+            "link": r.get("link", ""),
             "note": r.get("note", "")[:120],
             "text": r.get("text", "")[:160],
         })
@@ -193,8 +195,12 @@ def append():
         src = str(row.get("src", "v1"))
         if src not in ALLOWED_SRC:
             src = "v1"
+        # v4 讲解人用 link 指向它所讲解的 v1 标题，展示时并入速览栏
+        link = str(row.get("link", "") or "").strip()[:200]
         row = {k: str(row[k])[:20_000] for k in REQUIRED}
         row["src"] = src
+        if link:
+            row["link"] = link
 
         hit = None
         for old in existing:
