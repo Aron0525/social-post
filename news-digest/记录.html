@@ -14,15 +14,18 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"
 .wrap{max-width:760px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:22px;margin:8px 0 4px}
 .meta{color:var(--sub);font-size:13px;margin-bottom:16px}
-.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.tabs button{flex:1 1 30%;min-width:104px;background:var(--card);border:1px solid var(--border);color:var(--sub);padding:10px 12px;border-radius:12px;text-align:left;cursor:pointer;transition:.15s}
-.tabs button b{display:block;font-size:15px;color:var(--text);font-weight:600}
-.tabs button span{display:block;font-size:11px;color:var(--sub);margin-top:2px}
-.tabs button.on{border-color:var(--accent);background:rgba(29,155,240,.1)}
-.tabs button.on b{color:var(--accent)}
-.filters{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.filters button{background:transparent;border:1px solid var(--border);color:var(--sub);padding:5px 13px;font-size:12px;border-radius:999px;cursor:pointer}
-.filters button.on{border-color:var(--accent);color:var(--accent)}
+.nav{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:10px;margin-bottom:14px}
+.nav-tabs{display:flex;gap:8px;flex:3 1 380px;flex-wrap:wrap}
+.nav-tabs button{flex:1 1 30%;min-width:104px;background:var(--card2);border:1px solid var(--border);color:var(--sub);padding:10px 12px;border-radius:12px;text-align:left;cursor:pointer;transition:.15s}
+.nav-tabs button b{display:block;font-size:15px;color:var(--text);font-weight:600}
+.nav-tabs button span{display:block;font-size:11px;color:var(--sub);margin-top:2px}
+.nav-tabs button.on{border-color:var(--accent);background:rgba(29,155,240,.1)}
+.nav-tabs button.on b{color:var(--accent)}
+.nav-filters{display:flex;gap:8px;align-items:center;flex:1 1 220px;flex-wrap:wrap;padding-left:14px;border-left:1px solid var(--border)}
+.nav-filters .nav-label{font-size:12px;color:var(--sub)}
+.nav-filters button{background:transparent;border:1px solid var(--border);color:var(--sub);padding:6px 14px;font-size:13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.nav-filters button:hover{border-color:var(--sub)}
+.nav-filters button.on{border-color:var(--accent);color:var(--accent);background:rgba(29,155,240,.1)}
 .count{color:var(--sub);font-size:12px;margin-bottom:14px}
 .post{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;margin-bottom:16px}
 .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap}
@@ -46,6 +49,7 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .explain .ex-note{font-size:12px;color:var(--sub);margin-bottom:8px}
 .explain textarea{background:rgba(29,155,240,.05);font-size:14.5px}
 .explain .copy{font-size:12px;padding:4px 12px}
+.ex-src{font-size:12px;color:var(--accent);margin:2px 0 8px;opacity:.85}
 .orphan{margin-top:10px}
 </style>
 </head>
@@ -54,16 +58,19 @@ textarea:focus{outline:none;border-color:var(--accent)}
   <h1>推文记录</h1>
   <div class="meta">三栏各自独立 · 讲解人在速览栏内随文展示 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
 
-  <div class="tabs">
-    <button data-t="v1" class="on"><b>新闻速览</b><span>挖细节 · 80 到 900 字</span></button>
-    <button data-t="v2"><b>热点解构</b><span>追当天 · 30 到 250 字</span></button>
-    <button data-t="v3"><b>博眼球</b><span>话术结构 · 30 到 150 字</span></button>
-  </div>
-
-  <div class="filters">
-    <button class="on" data-f="all">全部</button>
-    <button data-f="new">只看全新</button>
-    <button data-f="overlap">只看重叠</button>
+  <div class="nav">
+    <div class="nav-tabs">
+      <button data-t="v1" class="on"><b>新闻速览</b><span>挖细节 · 80 到 900 字</span></button>
+      <button data-t="v2"><b>热点解构</b><span>追当天 · 30 到 250 字</span></button>
+      <button data-t="v3"><b>博眼球</b><span>话术结构 · 30 到 150 字</span></button>
+    </div>
+    <div class="nav-filters">
+      <span class="nav-label">筛选</span>
+      <button class="on" data-f="all">全部</button>
+      <button data-f="new">只看全新</button>
+      <button data-f="overlap">只看重叠</button>
+      <button data-f="explain">只看讲解人</button>
+    </div>
   </div>
   <div class="count" id="count"></div>
   <div id="list"></div>
@@ -98,7 +105,7 @@ const LABEL = {v1:'挖细节', v2:'追当天', v3:'话术结构'};
 function updateTabCounts(){
   ['v1','v2','v3'].forEach(t=>{
     const n = POSTS.filter(p => srcOf(p) === t).length;
-    const el = document.querySelector('.tabs button[data-t="' + t + '"] span');
+    const el = document.querySelector('.nav-tabs button[data-t="' + t + '"] span');
     if(el) el.textContent = LABEL[t] + ' · 共 ' + n + ' 条';
   });
 }
@@ -193,7 +200,38 @@ function render(){
     if(curStatus === 'overlap') arr = arr.filter(p => p.st !== 'new');
     arr = arr.slice().reverse();
 
-    const nExp = POSTS.filter(p => srcOf(p) === 'v4').length;
+    const allV4 = POSTS.filter(p => srcOf(p) === 'v4');
+    const nExp = allV4.length;
+
+    // 只看讲解人：只列讲解人正文，附上它所讲解的速览标题
+    if(curStatus === 'explain'){
+      countEl.textContent = '新闻速览 · 讲解人 ' + nExp + ' 条';
+      if(!nExp){
+        list.innerHTML = '<div class="empty">还没有讲解人条目</div>';
+        return;
+      }
+      const titleOf = new Map();
+      map.forEach((e, v1post)=> titleOf.set(e, v1post.title));
+      allV4.slice().reverse().forEach(e=>{
+        const div = renderPost(e);
+        div.querySelector('.badge').textContent = '讲解人';
+        const src = titleOf.get(e);
+        if(src){
+          const tag = document.createElement('div');
+          tag.className = 'ex-src';
+          tag.textContent = '讲解的是：' + src;
+          div.querySelector('.note').after(tag);
+        } else {
+          const tag = document.createElement('div');
+          tag.className = 'ex-src';
+          tag.textContent = '未匹配到速览条目';
+          div.querySelector('.note').after(tag);
+        }
+        list.appendChild(div);
+      });
+      return;
+    }
+
     countEl.textContent = '新闻速览 · ' + arr.length + ' 条速览 · ' + nExp + ' 条讲解人';
 
     if(!arr.length && !orphans.length){
@@ -231,19 +269,31 @@ function render(){
   arr.forEach(p=> list.appendChild(renderPost(p)));
 }
 
-document.querySelectorAll('.tabs button').forEach(b=>{
+document.querySelectorAll('.nav-tabs button').forEach(b=>{
   b.onclick = ()=>{
-    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.nav-tabs button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     curTab = b.dataset.t;
+    // 切栏时如果停在"只看讲解人"，回到全部，避免别的栏空白
+    if(curTab !== 'v1' && curStatus === 'explain'){
+      curStatus = 'all';
+      document.querySelectorAll('.nav-filters button').forEach(x=>x.classList.remove('on'));
+      document.querySelector('.nav-filters button[data-f="all"]').classList.add('on');
+    }
     render();
   };
 });
-document.querySelectorAll('.filters button').forEach(b=>{
+document.querySelectorAll('.nav-filters button').forEach(b=>{
   b.onclick = ()=>{
-    document.querySelectorAll('.filters button').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.nav-filters button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     curStatus = b.dataset.f;
+    // "只看讲解人"是速览栏专属，点它先切回速览
+    if(curStatus === 'explain' && curTab !== 'v1'){
+      curTab = 'v1';
+      document.querySelectorAll('.nav-tabs button').forEach(x=>x.classList.remove('on'));
+      document.querySelector('.nav-tabs button[data-t="v1"]').classList.add('on');
+    }
     render();
   };
 });
