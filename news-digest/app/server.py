@@ -236,6 +236,44 @@ def append():
     )
 
 
+@app.route("/audit")
+def audit():
+    """讲解人元话语体检：按 D1.2 规范扫描 v4，返回不合格条目。
+
+    检查项：
+      1. 认知标签：我的理解是/我的看法是/我的读法是/我的观点是/我的判断是
+      2. 预告思考：我试着/我先说说/接下来讲
+      3. 自问自答：要是让我/你问我怎么看
+      4. 标签+冒号/逗号引出结论
+      5. "你"少于两次
+      6. 书面连接词
+    """
+    rows = [r for r in load_rows() if r.get("src") == "v4"]
+    TAGS = ["我的理解是", "我的看法是", "我的读法是", "我的观点是", "我的判断是",
+            "我试着", "我先说说", "接下来讲", "要是让我", "你问我怎么看",
+            "综上所述", "由此可见", "值得注意的是", "本质上", "总而言之"]
+    bad = []
+    for r in rows:
+        text = r.get("text", "")
+        issues = []
+        for t in TAGS:
+            if t in text:
+                issues.append(f"标签:{t}")
+        for i, seg in enumerate(text.split("\n\n")):
+            if "：" in seg:
+                head = seg.split("：")[0]
+                if any(k in head for k in ["我", "所以", "这说明", "三层", "综上"]):
+                    issues.append(f"第{i + 1}块 标签+冒号")
+            if "，" in seg[:12] and any(k in seg[:12] for k in ["我的理解", "我的看法", "我的读法"]):
+                issues.append(f"第{i + 1}块 标签+逗号")
+        if text.count("你") < 2:
+            issues.append(f"你×{text.count('你')}")
+        if issues:
+            bad.append({"title": r.get("title", ""), "round": r.get("round", ""),
+                        "issues": issues})
+    return jsonify(ok=True, total=len(rows), bad=len(bad), items=bad)
+
+
 @app.route("/count")
 def count():
     return jsonify(total=len(load_rows()))
