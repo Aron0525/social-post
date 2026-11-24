@@ -34,6 +34,7 @@ h1{font-size:22px;margin:8px 0 4px}
 .audit-box li b{color:var(--text);font-weight:500}
 .post{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;margin-bottom:16px}
 .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .round{font-size:12px;color:var(--sub)}
 .badge{font-size:12px;padding:2px 10px;border-radius:999px;font-weight:600}
@@ -43,6 +44,7 @@ h1{font-size:22px;margin:8px 0 4px}
 .note{font-size:12px;color:var(--sub);margin-bottom:8px}
 .copy{background:transparent;border:1px solid var(--btn);color:var(--btn);padding:5px 14px;font-size:13px;border-radius:999px;cursor:pointer}
 .copy.done{border-color:var(--ok);color:var(--ok)}
+.copy.on-view{border-color:var(--ok);color:var(--ok)}
 textarea{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:15px;font-family:inherit;line-height:1.7;resize:vertical}
 textarea:focus{outline:none;border-color:var(--accent)}
 .empty{color:var(--sub);font-size:14px;padding:28px 4px;text-align:center}
@@ -54,6 +56,9 @@ textarea:focus{outline:none;border-color:var(--accent)}
 .explain .ex-note{font-size:12px;color:var(--sub);margin-bottom:8px}
 .explain textarea{background:rgba(29,155,240,.05);font-size:14.5px}
 .explain .copy{font-size:12px;padding:4px 12px}
+.en-ta{border-style:dashed;border-color:rgba(29,155,240,.45);color:#c9d4de;margin-top:8px}
+.en-label{font-size:12px;color:var(--sub);margin-top:10px;letter-spacing:.5px}
+.en-wrap[hidden]{display:none}
 .ex-src{font-size:12px;color:var(--accent);margin:2px 0 8px;opacity:.85}
 .orphan{margin-top:10px}
 </style>
@@ -61,7 +66,7 @@ textarea:focus{outline:none;border-color:var(--accent)}
 <body>
 <div class="wrap">
   <h1>推文记录</h1>
-  <div class="meta">三栏各自独立 · 讲解人在速览栏内随文展示 · 正文可直接复制 · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
+  <div class="meta">三栏各自独立 · 讲解人在速览栏内随文展示 · 正文可直接复制 · 每条附英文版（复制英文 / 点「英文」预览） · 逐条标注 ✅ 全新 / ⚠️ 部分重叠 / ▫️ 与之前一模一样 · 不含来源</div>
 
   <div class="nav">
     <div class="nav-tabs">
@@ -163,40 +168,102 @@ function buildExplainMap(){
   return {map, orphans};
 }
 
-function makeCopyBtn(btn, ta){
+function makeCopyBtn(btn, getText){
   btn.onclick = async ()=>{
-    try{ await navigator.clipboard.writeText(ta.value); }catch(e){ ta.select(); document.execCommand('copy'); }
-    const old = btn.textContent;
-    btn.textContent = '已复制 ✓'; btn.classList.add('done');
-    setTimeout(()=>{ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+    const t = typeof getText === 'function' ? getText() : getText;
+    let ok = true;
+    try{ await navigator.clipboard.writeText(t); }
+    catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(e2){ ok = false; }
+      ta.remove();
+    }
+    if(ok){
+      const old = btn.textContent;
+      btn.textContent = '已复制 ✓'; btn.classList.add('done');
+      setTimeout(()=>{ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+    }
   };
+}
+
+/* 英文版块：默认收起，「英文」展开预览，「复制英文」一键复制 */
+function attachEn(container, p){
+  const enText = String(p.en_text || '').trim();
+  if(!enText) return;
+  const full = (p.en_title ? p.en_title + '\n\n' : '') + enText;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'en-wrap';
+  wrap.hidden = true;
+  const label = document.createElement('div');
+  label.className = 'en-label';
+  label.textContent = 'ENGLISH';
+  const ta = document.createElement('textarea');
+  ta.className = 'en-ta';
+  ta.value = full;
+  ta.rows = Math.min(18, enText.split('\n\n').length + 2);
+  wrap.appendChild(label);
+  wrap.appendChild(ta);
+  container.appendChild(wrap);
+  container._enWrap = wrap;
+}
+
+function enButtons(container, p){
+  const enText = String(p.en_text || '').trim();
+  const btns = container.querySelector('.btns');
+  if(!enText) return;
+  const btnCopyEn = document.createElement('button');
+  btnCopyEn.className = 'copy copy-en';
+  btnCopyEn.textContent = '复制英文';
+  const full = (p.en_title ? p.en_title + '\n\n' : '') + enText;
+  makeCopyBtn(btnCopyEn, ()=> full);
+  const btnView = document.createElement('button');
+  btnView.className = 'copy';
+  btnView.textContent = '英文';
+  btnView.title = '展开/收起英文版';
+  btnView.onclick = ()=>{
+    const w = container._enWrap;
+    if(w){
+      w.hidden = !w.hidden;
+      btnView.classList.toggle('on-view', !w.hidden);
+      if(!w.hidden) w.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  };
+  btns.appendChild(btnCopyEn);
+  btns.appendChild(btnView);
 }
 
 function renderPost(p){
   const div = document.createElement('div');
   div.className = 'post';
   const [cls,label] = BADGE[p.st] || BADGE.same;
-  div.innerHTML = '<div class="head"><div class="left"><span class="round"></span><span class="badge ' + cls + '">' + label + '</span></div><button class="copy">复制全文</button></div><div class="note"></div>';
+  div.innerHTML = '<div class="head"><div class="left"><span class="round"></span><span class="badge ' + cls + '">' + label + '</span></div><div class="btns"><button class="copy">复制全文</button></div></div><div class="note"></div>';
   div.querySelector('.round').textContent = p.round + ' · ' + p.title;
   div.querySelector('.note').textContent = p.note || '';
   const ta = document.createElement('textarea');
   ta.value = p.text;
   ta.rows = Math.min(18, p.text.split('\n\n').length + 2);
   div.appendChild(ta);
-  makeCopyBtn(div.querySelector('.copy'), ta);
+  makeCopyBtn(div.querySelector('.copy'), ()=> p.text);
+  attachEn(div, p);
+  enButtons(div, p);
   return div;
 }
 
 function renderExplain(p){
   const box = document.createElement('div');
   box.className = 'explain';
-  box.innerHTML = '<div class="ex-head"><span class="ex-tag">讲解人</span><button class="copy">复制讲解</button></div><div class="ex-note"></div>';
+  box.innerHTML = '<div class="ex-head"><span class="ex-tag">讲解人</span><div class="btns"><button class="copy">复制讲解</button></div></div><div class="ex-note"></div>';
   box.querySelector('.ex-note').textContent = p.note || '';
   const ta = document.createElement('textarea');
   ta.value = p.text;
   ta.rows = Math.min(18, p.text.split('\n\n').length + 2);
   box.appendChild(ta);
-  makeCopyBtn(box.querySelector('.copy'), ta);
+  makeCopyBtn(box.querySelector('.copy'), ()=> p.text);
+  attachEn(box, p);
+  enButtons(box, p);
   return box;
 }
 
