@@ -27,6 +27,11 @@ h1{font-size:22px;margin:8px 0 4px}
 .nav-filters button:hover{border-color:var(--sub)}
 .nav-filters button.on{border-color:var(--accent);color:var(--accent);background:rgba(29,155,240,.1)}
 .count{color:var(--sub);font-size:12px;margin-bottom:14px}
+.audit-box{border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;background:var(--card2);font-size:13px;line-height:1.7}
+.audit-box .ok{color:#2ea043;font-weight:600}
+.audit-box .bad{color:#e5534b;font-weight:600}
+.audit-box ul{margin:6px 0 0;padding-left:18px;color:var(--sub)}
+.audit-box li b{color:var(--text);font-weight:500}
 .post{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;margin-bottom:16px}
 .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap}
 .left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -70,9 +75,11 @@ textarea:focus{outline:none;border-color:var(--accent)}
       <button data-f="new">只看全新</button>
       <button data-f="overlap">只看重叠</button>
       <button data-f="explain">只看讲解人</button>
+      <button data-f="audit" id="btnAudit" title="扫描元话语、中英排版惯性、测试残留">体检</button>
     </div>
   </div>
   <div class="count" id="count"></div>
+  <div id="auditBox" class="audit-box" hidden></div>
   <div id="list"></div>
 </div>
 <script>
@@ -98,6 +105,9 @@ async function load(){
 }
 
 function srcOf(p){ return ['v1','v2','v3','v4'].indexOf(p.src) >= 0 ? p.src : 'v1'; }
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 const TAB_NAME = {v1:'新闻速览', v2:'热点解构', v3:'博眼球'};
 const LABEL = {v1:'挖细节', v2:'追当天', v3:'话术结构'};
@@ -284,6 +294,7 @@ document.querySelectorAll('.nav-tabs button').forEach(b=>{
   };
 });
 document.querySelectorAll('.nav-filters button').forEach(b=>{
+  if(b.id === 'btnAudit') return;
   b.onclick = ()=>{
     document.querySelectorAll('.nav-filters button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
@@ -297,6 +308,28 @@ document.querySelectorAll('.nav-filters button').forEach(b=>{
     render();
   };
 });
+
+// 体检：调 /audit 拿全库扫描结果
+const auditBox = document.getElementById('auditBox');
+document.getElementById('btnAudit').onclick = async ()=>{
+  const btn = document.getElementById('btnAudit');
+  btn.textContent = '体检中…';
+  try{
+    const res = await fetch('/audit?t=' + Date.now(), {cache:'no-store'});
+    const d = await res.json();
+    if(!d.bad){
+      auditBox.innerHTML = '<span class="ok">体检通过</span> · 全库 ' + d.total + ' 条（讲解人 ' + d.v4 + ' 条），无元话语、无中英排版惯性、无测试残留。';
+    }else{
+      auditBox.innerHTML = '<span class="bad">发现 ' + d.bad + ' 条待修</span> · 全库 ' + d.total + ' 条'
+        + '<ul>' + d.items.map(it => '<li><b>' + (it.src||'v1') + '</b> ' + esc(it.title) + ' — ' + it.issues.join('、') + '</li>').join('') + '</ul>';
+    }
+    auditBox.hidden = false;
+  }catch(e){
+    auditBox.innerHTML = '<span class="bad">体检失败：</span>' + esc(String(e));
+    auditBox.hidden = false;
+  }
+  btn.textContent = '体检';
+};
 load();
 </script>
 </body>

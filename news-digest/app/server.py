@@ -238,40 +238,97 @@ def append():
 
 @app.route("/audit")
 def audit():
-    """讲解人元话语体检：按 D1.2 规范扫描 v4，返回不合格条目。
+    """全库文案体检：扫描四个栏目，返回不合格条目。
 
-    检查项：
+    v4 讲解人专查（元话语，见 D1.2）：
       1. 认知标签：我的理解是/我的看法是/我的读法是/我的观点是/我的判断是
       2. 预告思考：我试着/我先说说/接下来讲
       3. 自问自答：要是让我/你问我怎么看
       4. 标签+冒号/逗号引出结论
       5. "你"少于两次
       6. 书面连接词
+
+    全部四栏通用：
+      7. 中文与数字之间的空格（Markdown 排版惯性，真人不这么写）
+      8. 中文里夹的孤立英文单词（rules / CPU / API 之类）
+      9. 测试条目残留（标题含 __ 或 note 以"测试"开头）
     """
-    rows = [r for r in load_rows() if r.get("src") == "v4"]
+    rows = load_rows()
+    v4rows = [r for r in rows if r.get("src") == "v4"]
     TAGS = ["我的理解是", "我的看法是", "我的读法是", "我的观点是", "我的判断是",
             "我试着", "我先说说", "接下来讲", "要是让我", "你问我怎么看",
             "综上所述", "由此可见", "值得注意的是", "本质上", "总而言之"]
+    # 已知的合法专有名词，不算混排污染
+    PROPER = {
+        "AI", "GPU", "CPU", "NPU", "API", "APIs", "LLM", "TPU", "ASIC", "SoC", "FPGA",
+        "RTL", "ISA", "OS", "PC", "App", "USB", "PCIe", "DDR", "HBM", "SSD", "HDD",
+        "IDC", "CEO", "CTO", "CFO", "IPO", "GDP", "CPI", "PPI", "MaaS", "SaaS", "IaaS",
+        "PaaS", "Saa", "MLOps", "DevOps", "K8s", "RAG", "OCR", "ASR", "TTS", "RLHF",
+        "MoE", "KV", "GPU", "TOPS", "TPU", "VPU", "x86", "Arm", "ARM", "RISC",
+        "OpenAI", "Anthropic", "DeepSeek", "Kimi", "Qwen", "Gemini", "Claude", "Llama",
+        "Cboe", "Nasdaq", "NYSE", "GPU", "CEO", "SEC", "FDA", "NASA", "IEEE", "ISO",
+        "Defender", "VPN", "MIM", "LOCKER", "Dragos", "DesignArena", "Frostbite",
+        "Turbo", "Suno", "Vision", "Pro", "Max", "Ultra", "Mini", "Flash", "Plus",
+        "SEMI", "TSMC", "ASML", "ARM", "BLK", "JPM", "Citi", "GS", "UBS",
+    }
+    # 疑似生成杂质的通用英文词（排除专有名词、缩写、型号、技术通用词）
+    SUSPECT = {
+        "rules", "rule", "the", "and", "for", "with", "that", "this", "from",
+        "your", "you", "are", "was", "were", "not", "but", "all", "can", "has",
+        "have", "will", "would", "should", "could", "what", "when", "where",
+        "which", "who", "how", "why", "into", "than", "then", "them", "they",
+    }
+    # 技术领域通用词，中文里直接用英文是行业习惯，不算杂质
+    TECH_OK = {
+        "token", "tokens", "api", "apis", "ai", "gpu", "gpus", "cpu", "cpus",
+        "npu", "llm", "tpu", "asic", "soc", "fpga", "ram", "ssd", "hdd", "hbm",
+        "os", "pc", "app", "usb", "pcie", "ddr", "rtl", "isa", "arm", "x86",
+        "risc", "ide", "sdk", "cli", "gui", "url", "pdf", "html", "css", "sql",
+        "cdn", "ip", "tcp", "udp", "http", "wifi", "sim", "ota", "rom", "ram",
+        "iot", "suv", "mpv", "ev", "ceo", "cto", "cfo", "ipo", "gdp", "cpi",
+        "ppi", "id", "ip",
+    }
+    CN_SP = re.compile(r"[\u4e00-\u9fa5]\s+\d|\d\s+[\u4e00-\u9fa5]")
+    MIXED = re.compile(r"([\u4e00-\u9fa5])\s+([A-Za-z]{3,})\s+([\u4e00-\u9fa5])")
+
     bad = []
     for r in rows:
         text = r.get("text", "")
+        title = r.get("title", "")
+        is_v4 = r.get("src") == "v4"
         issues = []
-        for t in TAGS:
-            if t in text:
-                issues.append(f"标签:{t}")
-        for i, seg in enumerate(text.split("\n\n")):
-            if "：" in seg:
-                head = seg.split("：")[0]
-                if any(k in head for k in ["我", "所以", "这说明", "三层", "综上"]):
-                    issues.append(f"第{i + 1}块 标签+冒号")
-            if "，" in seg[:12] and any(k in seg[:12] for k in ["我的理解", "我的看法", "我的读法"]):
-                issues.append(f"第{i + 1}块 标签+逗号")
-        if text.count("你") < 2:
-            issues.append(f"你×{text.count('你')}")
+
+        if is_v4:
+            for t in TAGS:
+                if t in text:
+                    issues.append(f"标签:{t}")
+            for i, seg in enumerate(text.split("\n\n")):
+                if "：" in seg:
+                    head = seg.split("：")[0]
+                    if any(k in head for k in ["我", "所以", "这说明", "三层", "综上"]):
+                        issues.append(f"第{i + 1}块 标签+冒号")
+                if "，" in seg[:12] and any(k in seg[:12] for k in ["我的理解", "我的看法", "我的读法"]):
+                    issues.append(f"第{i + 1}块 标签+逗号")
+            if text.count("你") < 2:
+                issues.append(f"你×{text.count('你')}")
+
+        # 通用项
+        if CN_SP.search(text):
+            issues.append("中文数字间空格")
+        for seg in text.split("\n\n"):
+            for m in MIXED.finditer(seg):
+                w = m.group(2)
+                if w.lower() in SUSPECT and w.lower() not in TECH_OK:
+                    issues.append(f"混排:{w}")
+                    break
+        if title.startswith("__"):
+            issues.append("测试残留")
+
         if issues:
-            bad.append({"title": r.get("title", ""), "round": r.get("round", ""),
-                        "issues": issues})
-    return jsonify(ok=True, total=len(rows), bad=len(bad), items=bad)
+            bad.append({"title": title, "round": r.get("round", ""),
+                        "src": r.get("src", "v1"), "issues": issues})
+    return jsonify(ok=True, total=len(rows), v4=len(v4rows),
+                   bad=len(bad), items=bad)
 
 
 @app.route("/count")
