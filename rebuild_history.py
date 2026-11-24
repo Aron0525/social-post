@@ -34,15 +34,23 @@ for line in io.open(SESSION, encoding='utf-8'):
     if role not in ('user', 'assistant'):
         continue
     c = o.get('content')
-    txt = ''
+    # 逐块过滤：同一条 message 里提示块和真实发言是分开的两块，
+    # 只丢纯提示块，不能整条丢弃
+    keep = []
     if isinstance(c, list):
         for b in c:
-            if isinstance(b, dict) and b.get('type') in ('text', 'output_text', 'input_text'):
-                txt += (b.get('text') or '') + '\n'
-    txt = txt.strip()
-    if not txt or txt.startswith(SKIP_PREFIX):
-        continue
-    if 'compact-summary' in txt[:200] or 'conversation_history_summary' in txt[:200]:
+            if not isinstance(b, dict):
+                continue
+            if b.get('type') not in ('text', 'output_text', 'input_text'):
+                continue
+            bt = (b.get('text') or '').strip()
+            if not bt or bt.startswith(SKIP_PREFIX):
+                continue
+            if 'compact-summary' in bt[:200] or 'conversation_history_summary' in bt[:200]:
+                continue
+            keep.append(bt)
+    txt = '\n'.join(keep).strip()
+    if not txt:
         continue
     msgs.append((dt, role, txt))
 
