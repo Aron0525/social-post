@@ -197,10 +197,17 @@ def append():
             src = "v1"
         # v4 讲解人用 link 指向它所讲解的 v1 标题，展示时并入速览栏
         link = str(row.get("link", "") or "").strip()[:200]
+        # 英文版：en_title / en_text，供前端一键复制，展示仍用中文
+        en_title = str(row.get("en_title", "") or "")[:2_000]
+        en_text = str(row.get("en_text", "") or "")[:20_000]
         row = {k: str(row[k])[:20_000] for k in REQUIRED}
         row["src"] = src
         if link:
             row["link"] = link
+        if en_title:
+            row["en_title"] = en_title
+        if en_text:
+            row["en_text"] = en_text
 
         hit = None
         for old in existing:
