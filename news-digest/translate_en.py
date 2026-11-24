@@ -31,6 +31,7 @@ Each element: {"id": <the same id you received>, "title": "[[Mxxxx]] english tit
 """
 
 MARK_RE = re.compile(r'\[\[(M\d{4})\]\]')
+LOCK_SAVE = threading.Lock()
 
 
 def load_rows():
@@ -164,9 +165,11 @@ def check_pair(src, en_text):
     return True, 'ok'
 
 
-def worker(batch, results, stats, home):
+def worker(batch, stats, home):
     """并发跑一批。任何一条配不上（标记缺失/校验不过），单独重试该条。
 
+    batch 里每条的 id 是全库行号（全局唯一），返回的 got 以 id 为键，
+    不存在跨批次撞键问题。
     实测并发下模型偶尔会返回别的批次的译文（内容对但条目错）。
     哨兵标记 + 数字/段落校验能把这种错位挡下来，挡不下来的逐条串行重试。
     """
@@ -231,17 +234,35 @@ def worker(batch, results, stats, home):
                 collect(bm, [item], got, quiet=True)
 
         with LOCK:
-            results.update(got)
             stats['ok'] += len(got)
             stats['fail'] += len(batch) - len(got)
             if len(still):
                 stats['errors'].append('UNRESOLVED %d: %s'
                                        % (len(still),
                                           ' | '.join(s['title'][:20] for s in still)))
+        return got
     except Exception as e:
         with LOCK:
             stats['fail'] += len(batch)
             stats['errors'].append(str(e)[:200])
+        return {}
+
+
+def merge_and_save(translations):
+    """把 {行键: {en_title, en_text}} 合并进 posts.jsonl 并原子落盘。
+
+    每次落盘前重新读文件，定时任务 /append 新增的行不会被覆盖掉。
+    行键用 (src, round, title)：跨场次有同名重复条目，必须带场次区分。
+    """
+    with LOCK_SAVE:
+        rows = load_rows()
+        for r in rows:
+            key = (r.get('src', 'v1'), r.get('round', ''), r.get('title', ''))
+            g = translations.get(key)
+            if g and not (r.get('en_text') or '').strip():
+                r['en_title'] = g['title']
+                r['en_text'] = g['text']
+        save_rows(rows)
 
 
 def main():
@@ -269,43 +290,44 @@ def main():
         for j, i in enumerate(idxs):
             r = rows[i]
             marker = '[[M%04d]]' % (j + 1)
-            batch.append({'id': j, 'marker': marker,
+            batch.append({'id': i, 'marker': marker,
                           'title': marker + ' ' + r.get('title', ''),
                           'text': r.get('text', '')})
         batches.append((idxs, batch))
 
-    results = {}
     stats = {'ok': 0, 'fail': 0, 'errors': []}
     done = 0
+    applied_total = 0
     t0 = time.time()
     home_root = '/tmp/cb_en_homes'
     os.makedirs(home_root, exist_ok=True)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as ex:
-        futs = [ex.submit(worker, batch, results, stats,
-                          os.path.join(home_root, 'b%d' % k))
-                for k, (_, batch) in enumerate(batches)]
+        futs = {ex.submit(worker, batch, stats,
+                          os.path.join(home_root, 'b%d' % k)): idxs
+                for k, (idxs, batch) in enumerate(batches)}
         for fut in concurrent.futures.as_completed(futs):
-            fut.result()
+            idxs = futs[fut]
+            got = fut.result()
+            # 每批完成立即落盘：进程被杀/超时也不丢已完成的批次
+            if got:
+                tr = {}
+                for i in idxs:
+                    g = got.get(i)
+                    if g:
+                        tr[(rows[i].get('src', 'v1'), rows[i].get('round', ''),
+                            rows[i].get('title', ''))] = g
+                if tr:
+                    merge_and_save(tr)
+                    applied_total += len(tr)
             done += 1
             if done % 5 == 0 or done == len(batches):
-                print('[translate] 批次 %d/%d | 成功 %d 失败 %d | %.0fs'
-                      % (done, len(batches), stats['ok'], stats['fail'],
-                         time.time() - t0), flush=True)
+                print('[translate] 批次 %d/%d | 累计落盘 %d | 成功 %d 失败 %d | %.0fs'
+                      % (done, len(batches), applied_total, stats['ok'],
+                         stats['fail'], time.time() - t0), flush=True)
 
-    # 回写
-    applied = 0
-    for k, (idxs, batch) in enumerate(batches):
-        for j, i in enumerate(idxs):
-            got = results.get(j)
-            if not got:
-                continue
-            rows[i]['en_title'] = got['title']
-            rows[i]['en_text'] = got['text']
-            applied += 1
-    save_rows(rows)
-    print('[translate] 回写 %d 条 | 失败 %d 条 | 用时 %.0fs'
-          % (applied, stats['fail'], time.time() - t0), flush=True)
+    print('[translate] 共落盘 %d 条 | 失败 %d 条 | 用时 %.0fs'
+          % (applied_total, stats['fail'], time.time() - t0), flush=True)
     for e in stats['errors'][:5]:
         print('  err:', e, flush=True)
 
