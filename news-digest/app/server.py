@@ -295,8 +295,28 @@ def audit():
         "iot", "suv", "mpv", "ev", "ceo", "cto", "cfo", "ipo", "gdp", "cpi",
         "ppi", "id", "ip",
     }
-    CN_SP = re.compile(r"[\u4e00-\u9fa5]\s+\d|\d\s+[\u4e00-\u9fa5]")
+    CN_SP = re.compile(r"[\u4e00-\u9fa5]\s+\d+|\d+\s+[\u4e00-\u9fa5]")
     MIXED = re.compile(r"([\u4e00-\u9fa5])\s+([A-Za-z]{3,})\s+([\u4e00-\u9fa5])")
+
+    def has_cn_number_space(text):
+        """中文与数字之间不该有空格（"11 月 20 日"式排版惯性）。
+
+        但型号名后面的空格是正常中英混排，不能算：
+          Mate X8 发布会 / Kimi K3 上 / GPT-6 系列 / SWE-2.1 模型
+        判据：数字串紧邻字母、连字符或小圆点，则视为英文 token 的一部分。
+        """
+        for m in CN_SP.finditer(text):
+            seg = m.group(0)
+            dm = re.search(r"\d+", seg)
+            if not dm:
+                continue
+            start, end = m.start() + dm.start(), m.start() + dm.end()
+            before = text[start - 1] if start > 0 else ""
+            after = text[end] if end < len(text) else ""
+            if re.match(r"[A-Za-z\-._]", before or "") or re.match(r"[A-Za-z\-._]", after or ""):
+                continue
+            return True
+        return False
 
     bad = []
     for r in rows:
@@ -320,7 +340,7 @@ def audit():
                 issues.append(f"你×{text.count('你')}")
 
         # 通用项
-        if CN_SP.search(text):
+        if has_cn_number_space(text):
             issues.append("中文数字间空格")
         for seg in text.split("\n\n"):
             for m in MIXED.finditer(seg):
